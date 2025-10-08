@@ -13,27 +13,27 @@ object TestNotesRepositoryImpl : NotesRepository {
 
     private val notesListFlow = MutableStateFlow<List<Note>>(listOf())
 
-    override fun addNote(title: String, content: String) {
-        //Long Version
-        /*val newNotes = notesListFlow.value.toMutableList()
-        newNotes.add(note)
-        notesListFlow.value = newNotes*/
-
+    override suspend fun addNote(
+        title: String,
+        content: String,
+        isPinned: Boolean,
+        updatedAt: Long
+    ) {
         //Short version
         notesListFlow.update { oldList ->
             val note = Note(
                 id = oldList.size,
                 title = title,
                 content = content,
-                updatedAt = System.currentTimeMillis(),
-                isPinned = false
+                updatedAt = updatedAt ,
+                isPinned = isPinned
             )
             oldList + note
         }
     }
 
 
-    override fun deleteNote(noteId: Int) {
+    override suspend fun deleteNote(noteId: Int) {
         notesListFlow.update { oldList ->
             oldList.toMutableList().apply {
                 removeIf {
@@ -43,7 +43,7 @@ object TestNotesRepositoryImpl : NotesRepository {
         }
     }
 
-    override fun editNote(note: Note) {
+    override suspend fun editNote(note: Note) {
         notesListFlow.update { oldList ->
             oldList.map {
                 if (it.id == note.id) {
@@ -59,7 +59,7 @@ object TestNotesRepositoryImpl : NotesRepository {
         return notesListFlow.asStateFlow()
     }
 
-    override fun getNote(noteId: Int): Note {
+    override suspend fun getNote(noteId: Int): Note {
         return notesListFlow.value.first { it.id == noteId }
     }
 
@@ -71,7 +71,7 @@ object TestNotesRepositoryImpl : NotesRepository {
         }
     }
 
-    override fun switchPinStatus(noteId: Int) {
+    override suspend fun switchPinStatus(noteId: Int) {
         notesListFlow.update { oldList ->
             oldList.map {
                 if (it.id == noteId) {
