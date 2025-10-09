@@ -2,8 +2,10 @@
 
 package com.example.suminnotes.presentation.screens.notes
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.suminnotes.data.NotesRepositoryImpl
 import com.example.suminnotes.data.TestNotesRepositoryImpl
 import com.example.suminnotes.domain.GetAllNotesUseCase
 import com.example.suminnotes.domain.Note
@@ -17,9 +19,9 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class NotesViewModel : ViewModel() {
+class NotesViewModel(context: Context) : ViewModel() {
 
-    private val repository: TestNotesRepositoryImpl = TestNotesRepositoryImpl
+    private val repository = NotesRepositoryImpl.getInstance(context)
 
     private val getAllNotesUseCase = GetAllNotesUseCase(repository)
     private val searchNotesUseCase = SearchNotesUseCase(repository)
@@ -49,7 +51,7 @@ class NotesViewModel : ViewModel() {
                     it.copy(pinnedNotes = pinnedNotes, otherNotes = otherNotes)
                 }
             }
-            .launchIn(viewModelScope )
+            .launchIn(viewModelScope)
     }
 
     fun processCommand(command: NotesCommands) {
