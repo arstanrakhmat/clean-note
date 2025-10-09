@@ -1,6 +1,8 @@
 package com.example.suminnotes.domain
 
-class SwitchPinStatusUseCase(
+import javax.inject.Inject
+
+class SwitchPinStatusUseCase @Inject constructor(
     private val repository: NotesRepository
 ) {
 
