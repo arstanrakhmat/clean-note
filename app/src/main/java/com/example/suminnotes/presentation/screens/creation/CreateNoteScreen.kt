@@ -1,5 +1,7 @@
 package com.example.suminnotes.presentation.screens.creation
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.suminnotes.presentation.ui.theme.Content
+import com.example.suminnotes.presentation.ui.theme.CustomIcons
 import com.example.suminnotes.presentation.utils.DateFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,8 +42,19 @@ fun CreateNoteScreen(
     onFinished: () -> Unit
 ) {
     val state = viewModel.state.collectAsState()
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            uri?.let {
+                viewModel.processCommand(CreateNoteCommand.AddImage(it))
+            }
+        }
+    )
+
     when (val currentState = state.value) {
         is CreateNoteState.Creation -> {
+
             Scaffold(
                 modifier = modifier,
                 topBar = {
@@ -63,6 +78,18 @@ fun CreateNoteScreen(
                                     .clickable { viewModel.processCommand(CreateNoteCommand.Back) },
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Go back"
+                            )
+                        },
+                        actions = {
+                            Icon(
+                                modifier = Modifier
+                                    .clickable {
+                                        imagePicker.launch("image/*")
+                                    }
+                                    .padding(end = 24.dp),
+                                imageVector = CustomIcons.AddPhoto,
+                                contentDescription = "Add photo",
+                                tint = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                     )
@@ -105,28 +132,16 @@ fun CreateNoteScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    TextField(
+                    Content(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
                             .weight(1f),
-                        value = currentState.content,
-                        onValueChange = { viewModel.processCommand(CreateNoteCommand.InputContent(it)) },
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                        ),
-                        textStyle = TextStyle(
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                        placeholder = {
-                            Text(
-                                text = "Note something down",
-                                fontSize = 24.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                        content = currentState.content,
+                        onDeleteImageClicked = {
+                            viewModel.processCommand(CreateNoteCommand.DeleteImage(it))
+                        },
+                        onTextChanged = { index, text ->
+                            viewModel.processCommand(
+                                CreateNoteCommand.InputContent(text, index)
                             )
                         }
                     )

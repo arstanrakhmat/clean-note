@@ -29,7 +29,7 @@ abstract class NotesDatabase : RoomDatabase() {
                     context = context,
                     klass = NotesDatabase::class.java,
                     name = "notes.db"
-                ).build().also {
+                ).fallbackToDestructiveMigration(dropAllTables = true).build().also {
                     instance = it
                 }
             }

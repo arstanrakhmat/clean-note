@@ -1,5 +1,6 @@
 package com.example.suminnotes.presentation.screens.creation
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.suminnotes.domain.AddNoteUseCase
@@ -28,12 +29,18 @@ class CreateNoteViewModel @Inject constructor(
             is CreateNoteCommand.InputContent -> {
                 _state.update { prevState ->
                     if (prevState is CreateNoteState.Creation) {
+                        val newContent = prevState.content.mapIndexed { index, contentItem ->
+                            if (index == command.index && contentItem is ContentItem.Text) {
+                                contentItem.copy(content = command.content)
+                            } else {
+                                contentItem
+                            }
+                        }
                         prevState.copy(
-                            content = command.content,
-                            isSavedEnabled = prevState.title.isNotBlank() && prevState.content.isNotBlank()
+                            content = newContent
                         )
                     } else {
-                        CreateNoteState.Creation(content = command.content)
+                        prevState
                     }
                 }
             }
@@ -43,10 +50,9 @@ class CreateNoteViewModel @Inject constructor(
                     if (prevState is CreateNoteState.Creation) {
                         prevState.copy(
                             title = command.title,
-                            isSavedEnabled = prevState.title.isNotBlank() && prevState.content.isNotBlank()
                         )
                     } else {
-                        CreateNoteState.Creation(title = command.title)
+                        prevState
                     }
                 }
             }
@@ -56,8 +62,10 @@ class CreateNoteViewModel @Inject constructor(
                     _state.update { prevState ->
                         if (prevState is CreateNoteState.Creation) {
                             val title = prevState.title
-                            val content = ContentItem.Text(content = prevState.content)
-                            addNoteUseCase(title, listOf(content))
+                            val content = prevState.content.filter {
+                                it !is ContentItem.Text || it.content.isNotBlank()
+                            }
+                            addNoteUseCase(title, content)
                             CreateNoteState.Finished
                         } else {
                             prevState
@@ -66,6 +74,35 @@ class CreateNoteViewModel @Inject constructor(
                 }
 
             }
+
+            is CreateNoteCommand.AddImage -> {
+                _state.update { prevState ->
+                    if (prevState is CreateNoteState.Creation) {
+                        val newItems = prevState.content.toMutableList()
+                        val lastItem = newItems.last()
+                        if (lastItem is ContentItem.Text && lastItem.content.isBlank()) {
+                            newItems.removeAt(newItems.lastIndex)
+                        }
+                        newItems.add(ContentItem.Image(command.uri.toString()))
+                        newItems.add(ContentItem.Text(""))
+                        prevState.copy(content = newItems)
+                    } else {
+                        prevState
+                    }
+                }
+            }
+
+            is CreateNoteCommand.DeleteImage -> {
+                _state.update { prevState ->
+                    if (prevState is CreateNoteState.Creation) {
+                        val newItems = prevState.content.toMutableList()
+                        newItems.removeAt(command.index)
+                        prevState.copy(content = newItems)
+                    } else {
+                        prevState
+                    }
+                }
+            }
         }
     }
 }
@@ -73,7 +110,11 @@ class CreateNoteViewModel @Inject constructor(
 sealed interface CreateNoteCommand {
     data class InputTitle(val title: String) : CreateNoteCommand
 
-    data class InputContent(val content: String) : CreateNoteCommand
+    data class InputContent(val content: String, val index: Int) : CreateNoteCommand
+
+    data class AddImage(val uri: Uri) : CreateNoteCommand
+
+    data class DeleteImage(val index: Int) : CreateNoteCommand
 
     data object Save : CreateNoteCommand
 
@@ -83,9 +124,21 @@ sealed interface CreateNoteCommand {
 sealed interface CreateNoteState {
     data class Creation(
         val title: String = "",
-        val content: String = "",
-        val isSavedEnabled: Boolean = false
-    ) : CreateNoteState
+        val content: List<ContentItem> = listOf(ContentItem.Text("")),
+    ) : CreateNoteState {
+        val isSavedEnabled: Boolean
+            get() {
+                return when {
+                    title.isBlank() -> false
+                    content.isEmpty() -> false
+                    else -> {
+                        content.any {
+                            it !is ContentItem.Text || it.content.isNotBlank()
+                        }
+                    }
+                }
+            }
+    }
 
     data object Finished : CreateNoteState
 }
