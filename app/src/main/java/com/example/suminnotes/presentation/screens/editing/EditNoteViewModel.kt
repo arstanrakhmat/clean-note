@@ -2,6 +2,7 @@ package com.example.suminnotes.presentation.screens.editing
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.suminnotes.domain.ContentItem
 import com.example.suminnotes.domain.DeleteNoteUseCase
 import com.example.suminnotes.domain.EditNoteUseCase
 import com.example.suminnotes.domain.GetNoteUseCase
@@ -44,7 +45,8 @@ class EditNoteViewModel @AssistedInject constructor(
             is EditNoteCommand.InputContent -> {
                 _state.update { prevState ->
                     if (prevState is EditNoteState.Editing) {
-                        val newNote = prevState.note.copy(content = command.content)
+                        val newContent = ContentItem.Text(content = command.content)
+                        val newNote = prevState.note.copy(content = listOf(newContent))
                         prevState.copy(note = newNote)
                     } else {
                         prevState
@@ -119,7 +121,17 @@ sealed interface EditNoteState {
     ) : EditNoteState {
 
         val isSavedEnabled: Boolean
-            get() = note.title.isNotBlank() && note.content.isNotBlank()
+            get() {
+                return when {
+                    note.title.isBlank() -> false
+                    note.content.isEmpty() -> false
+                    else -> {
+                        note.content.any {
+                            it !is ContentItem.Text || it.content.isNotBlank()
+                        }
+                    }
+                }
+            }
     }
 
     data object Finished : EditNoteState

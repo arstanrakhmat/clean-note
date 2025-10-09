@@ -3,6 +3,7 @@ package com.example.suminnotes.presentation.screens.creation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.suminnotes.domain.AddNoteUseCase
+import com.example.suminnotes.domain.ContentItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -55,8 +56,8 @@ class CreateNoteViewModel @Inject constructor(
                     _state.update { prevState ->
                         if (prevState is CreateNoteState.Creation) {
                             val title = prevState.title
-                            val content = prevState.content
-                            addNoteUseCase(title, content)
+                            val content = ContentItem.Text(content = prevState.content)
+                            addNoteUseCase(title, listOf(content))
                             CreateNoteState.Finished
                         } else {
                             prevState
