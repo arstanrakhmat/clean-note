@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Notes</string>
+    <string name="search">Поиск…</string>
+    <string name="just_now">Только что</string>
+    <string name="hours_ago">%1$s hours ago</string>
+</resources>
